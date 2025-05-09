@@ -3,10 +3,11 @@ using UnityEngine;
 
 public class GridPosition : MonoBehaviour
 {
-    [SerializeField] private Vector2 m_Position;
+    [SerializeField] private Vector2Int m_Position;
 
     private void OnMouseDown()
     {
-        Debug.Log("OnMouseDown by position: " + m_Position);
+        GameManager.Instance.ClickedOnGridPosition(m_Position.x, m_Position.y);
+        Debug.Log("I have been clicked");
     }
 }
