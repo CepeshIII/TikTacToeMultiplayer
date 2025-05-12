@@ -26,6 +26,7 @@ public class GameManager : NetworkBehaviour
     }
 
     public event EventHandler OnRematch;
+    public event EventHandler OnGameTied;
 
 
     public enum PlayerType
@@ -267,10 +268,36 @@ public class GameManager : NetworkBehaviour
                 Debug.Log("Winn!!!");
                 currentPlayablePlayerType.Value = PlayerType.None;
                 TriggerOnGameWinRpc(i, playerTypesArray[line.centerGridPosition.x, line.centerGridPosition.y]);
-                break;
+                return;
             }
         }
+
+        bool hasTie = true;
+        for(int x = 0; x < playerTypesArray.GetLength(0); x++)
+        {
+            for (int y = 0; y < playerTypesArray.GetLength(1); y++)
+            {
+                if (playerTypesArray[x, y] == PlayerType.None) 
+                { 
+                    hasTie = false;
+                    break;
+                }
+            }
+        }
+
+        if (hasTie)
+        {
+            TriggerOnTiedRpc();
+        }
+
     }
+
+    [Rpc(SendTo.ClientsAndHost)]
+    private void TriggerOnTiedRpc()
+    {
+        OnGameTied?.Invoke(this, EventArgs.Empty);
+    }
+
 
     [Rpc(SendTo.ClientsAndHost)]
     private void TriggerOnGameWinRpc(int lineIndex, PlayerType winPlayerType)
