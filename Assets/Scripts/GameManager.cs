@@ -1,5 +1,7 @@
-﻿using System;
+﻿using NUnit.Framework;
+using System;
 using System.Collections;
+using System.Collections.Generic;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -16,6 +18,11 @@ public class GameManager : NetworkBehaviour
     }
     public event EventHandler OnGameStarted;
     public event EventHandler OnCurrentPlayablePlayerTypeChange;
+    public event EventHandler<OnGameWinEventArgs> OnGameWin;
+    public class OnGameWinEventArgs: EventArgs
+    {
+        public Line line; 
+    }
 
 
 
@@ -26,10 +33,26 @@ public class GameManager : NetworkBehaviour
         Circle
     }
 
+    public enum Orientation
+    {
+        Horizontal,
+        Vertical,
+        DiagonalA,
+        DiagonalB,
+    }
+
+    public struct Line
+    {
+        public List<Vector2Int> gridVector2InList;
+        public Vector2Int centerGridPosition;
+        public Orientation orientation;
+    }
+
+
     private PlayerType localPlayerType;
     private NetworkVariable<PlayerType> currentPlayablePlayerType = new();
-    private PlayerType[,] playerTypesArray; 
-
+    private PlayerType[,] playerTypesArray;
+    private List<Line> lineList;
 
     public void Awake()
     {
@@ -41,6 +64,104 @@ public class GameManager : NetworkBehaviour
         Instance = this;
 
         playerTypesArray = new PlayerType[3, 3];
+
+        lineList = new List<Line> 
+        { 
+            //Horizontal
+            new Line
+            {
+                gridVector2InList = new List<Vector2Int>
+                {
+                    new Vector2Int(0, 0),
+                    new Vector2Int(1, 0),
+                    new Vector2Int(2, 0),
+                },
+                centerGridPosition = new Vector2Int(1, 0),
+                orientation = Orientation.Horizontal,
+            },
+            new Line
+            {
+                gridVector2InList = new List<Vector2Int>
+                {
+                    new Vector2Int(0, 1),
+                    new Vector2Int(1, 1),
+                    new Vector2Int(2, 1),
+                },
+                centerGridPosition = new Vector2Int(1, 1),
+                orientation = Orientation.Horizontal,
+
+            },
+            new Line
+            {
+                gridVector2InList = new List<Vector2Int>
+                {
+                    new Vector2Int(0, 2),
+                    new Vector2Int(1, 2),
+                    new Vector2Int(2, 2),
+                },
+                centerGridPosition = new Vector2Int(1, 2),
+                orientation = Orientation.Horizontal,
+            },
+
+            //Vertical
+            new Line
+            {
+                gridVector2InList = new List<Vector2Int>
+                {
+                    new Vector2Int(0, 0),
+                    new Vector2Int(0, 1),
+                    new Vector2Int(0, 2),
+                },
+                centerGridPosition = new Vector2Int(0, 1),
+                orientation = Orientation.Vertical,
+            },
+            new Line
+            {
+                gridVector2InList = new List<Vector2Int>
+                {
+                    new Vector2Int(1, 0),
+                    new Vector2Int(1, 1),
+                    new Vector2Int(1, 2),
+                },
+                centerGridPosition = new Vector2Int(1, 1),
+                orientation = Orientation.Vertical,
+            },
+            new Line
+            {
+                gridVector2InList = new List<Vector2Int>
+                {
+                    new Vector2Int(2, 0),
+                    new Vector2Int(2, 1),
+                    new Vector2Int(2, 2),
+                },
+                centerGridPosition = new Vector2Int(2, 1),
+                orientation = Orientation.Vertical,
+            },
+
+            //diagonal
+            new Line
+            {
+                gridVector2InList = new List<Vector2Int>
+                {
+                    new Vector2Int(0, 0),
+                    new Vector2Int(1, 1),
+                    new Vector2Int(2, 2),
+                },
+                centerGridPosition = new Vector2Int(1, 1),
+                orientation = Orientation.DiagonalA,
+            },
+            new Line
+            {
+                gridVector2InList = new List<Vector2Int>
+                {
+                    new Vector2Int(0, 2),
+                    new Vector2Int(1, 1),
+                    new Vector2Int(2, 0),
+                },
+                centerGridPosition = new Vector2Int(1, 1),
+                orientation = Orientation.DiagonalB,
+            },
+        };
     }
 
     public override void OnNetworkSpawn()
@@ -84,7 +205,7 @@ public class GameManager : NetworkBehaviour
     [Rpc(SendTo.Server)]
     public void ClickedOnGridPositionRpc(int x, int y, PlayerType playerType)
     {
-        Debug.Log($"Clicked on grid position: (x, y)");
+        Debug.Log($"PlayerType: {playerType}. Clicked on grid position: {x}, {y}");
         if (currentPlayablePlayerType.Value != playerType) return;
 
         if (playerTypesArray[x, y] != PlayerType.None) 
@@ -112,6 +233,43 @@ public class GameManager : NetworkBehaviour
             case PlayerType.Circle:
                 currentPlayablePlayerType.Value = PlayerType.Cross;
                 break;
+        }
+
+        TestWinner();
+    }
+
+    private bool TestWinnerLine(Line line)
+    {
+        return TestWinnerLine(
+            playerTypesArray[line.gridVector2InList[0].x, line.gridVector2InList[0].y],
+            playerTypesArray[line.gridVector2InList[1].x, line.gridVector2InList[1].y],
+            playerTypesArray[line.gridVector2InList[2].x, line.gridVector2InList[2].y]  
+            );
+    }
+
+    private bool TestWinnerLine(PlayerType aPlayerType, PlayerType bPlayerType, PlayerType cPlayerType) 
+    {
+        return aPlayerType != PlayerType.None
+                && aPlayerType == bPlayerType
+                && aPlayerType == cPlayerType;
+    }
+
+    private void TestWinner()
+    {
+        foreach (var line in lineList) 
+        {
+            if (TestWinnerLine(line))
+            {
+                // Winn
+                Debug.Log("Winn!!!");
+                currentPlayablePlayerType.Value = PlayerType.None;
+                OnGameWin?.Invoke(this, new OnGameWinEventArgs
+                {
+                    line = line
+
+                });
+                break;
+            }
         }
     }
 
