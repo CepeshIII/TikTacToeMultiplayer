@@ -17,6 +17,7 @@ public class GameManager : NetworkBehaviour
         public PlayerType playerType;
     }
     public event EventHandler OnGameStarted;
+    public event EventHandler OnPlacedObject;
     public event EventHandler OnCurrentPlayablePlayerTypeChange;
     public event EventHandler<OnGameWinEventArgs> OnGameWin;
     public class OnGameWinEventArgs: EventArgs
@@ -227,6 +228,7 @@ public class GameManager : NetworkBehaviour
         }
 
         playerTypesArray[x, y] = playerType;
+        TriggerOnPlacedObjectRpc();
 
         OnClickedOnGridPosition?.Invoke(this, new OnClickedOnGridPositionEventArgs
         {
@@ -248,6 +250,12 @@ public class GameManager : NetworkBehaviour
         }
 
         TestWinner();
+    }
+
+    [Rpc(SendTo.ClientsAndHost)]
+    private void TriggerOnPlacedObjectRpc()
+    {
+        OnPlacedObject?.Invoke(this, EventArgs.Empty);
     }
 
     private bool TestWinnerLine(Line line)
