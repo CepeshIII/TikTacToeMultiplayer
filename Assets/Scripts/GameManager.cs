@@ -3,7 +3,9 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using Unity.Netcode;
+using Unity.Services.Core;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class GameManager : NetworkBehaviour
 {
@@ -29,6 +31,8 @@ public class GameManager : NetworkBehaviour
     public event EventHandler OnRematch;
     public event EventHandler OnGameTied;
     public event EventHandler OnScoreChanged;
+    public event EventHandler OnGameQuit;
+    
 
 
     public enum PlayerType
@@ -170,6 +174,8 @@ public class GameManager : NetworkBehaviour
                 orientation = Orientation.DiagonalB,
             },
         };
+
+        OnGameQuit += GameManager_OnGameQuit;
     }
 
     public override void OnNetworkSpawn()
@@ -357,6 +363,29 @@ public class GameManager : NetworkBehaviour
     private void TriggerOnRematchRpc()
     {
         OnRematch?.Invoke(this, EventArgs.Empty);
+    }
+
+    public void QuitFromGame()
+    {
+        TriggerQuitFromGameRpc();
+    }
+
+    [Rpc(SendTo.ClientsAndHost)]
+    private void TriggerQuitFromGameRpc()
+    {
+        OnGameQuit?.Invoke(this, EventArgs.Empty);
+    }
+
+    public override void OnDestroy()
+    {
+        if(NetworkManager.Singleton != null)
+            NetworkManager.Singleton.OnClientConnectedCallback -= NetworkManager_OnClientConnectedCallback;
+        base.OnDestroy();
+    }
+
+    private void GameManager_OnGameQuit(object sender, EventArgs e)
+    {
+        SceneManager.LoadScene(1);
     }
 
     public PlayerType GetLocalPlayerType()
