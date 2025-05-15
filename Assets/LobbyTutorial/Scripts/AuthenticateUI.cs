@@ -20,4 +20,9 @@ public class AuthenticateUI : MonoBehaviour {
         gameObject.SetActive(false);
     }
 
+
+    private void OnDestroy()
+    {
+        authenticateButton.onClick.RemoveAllListeners();
+    }
 }

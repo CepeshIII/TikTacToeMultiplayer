@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Unity.Netcode;
 using Unity.Services.Authentication;
 using Unity.Services.Core;
 using Unity.Services.Lobbies;
@@ -75,7 +76,13 @@ public class LobbyManager : MonoBehaviour {
     }
 
     public async void Authenticate(string playerName) {
-        this.playerName = playerName.Replace(' ', '_');
+        if (UnityServices.Instance.GetAuthenticationService() != null && UnityServices.Instance.GetAuthenticationService().IsAuthorized)
+        {
+            Deauntification();
+        }
+
+        playerName = playerName.Replace(' ', '_');
+        this.playerName = playerName;
         InitializationOptions initializationOptions = new InitializationOptions();
         initializationOptions.SetProfile(playerName);
 
@@ -89,6 +96,11 @@ public class LobbyManager : MonoBehaviour {
         };
 
         await AuthenticationService.Instance.SignInAnonymouslyAsync();
+    }
+
+    public void Deauntification() 
+    {
+        UnityServices.Instance.GetAuthenticationService().SignOut();
     }
 
     public async void SetRelayJoinCode(string joinCode)
@@ -204,33 +216,13 @@ public class LobbyManager : MonoBehaviour {
         });
     }
 
-    public void ChangeGameMode() {
-        if (IsLobbyHost()) {
-            GameMode gameMode =
-                Enum.Parse<GameMode>(joinedLobby.Data[KEY_GAME_MODE].Value);
-
-            switch (gameMode) {
-                default:
-                case GameMode.CaptureTheFlag:
-                    gameMode = GameMode.Conquest;
-                    break;
-                case GameMode.Conquest:
-                    gameMode = GameMode.CaptureTheFlag;
-                    break;
-            }
-
-            UpdateLobbyGameMode(gameMode);
-        }
-    }
-
-    public async void CreateLobby(string lobbyName, int maxPlayers, bool isPrivate, GameMode gameMode) {
+    public async void CreateLobby(string lobbyName, int maxPlayers, bool isPrivate) {
         Player player = GetPlayer();
 
         CreateLobbyOptions options = new CreateLobbyOptions {
             Player = player,
             IsPrivate = isPrivate,
             Data = new Dictionary<string, DataObject> {
-                { KEY_GAME_MODE, new DataObject(DataObject.VisibilityOptions.Public, gameMode.ToString()) },
                 { KEY_RELAY_JOIN_CODE, new DataObject(DataObject.VisibilityOptions.Public, "") }
             }
         };
@@ -424,7 +416,7 @@ public class LobbyManager : MonoBehaviour {
             IsHost = true;
             alreadyStartedGame = true;
 
-            SceneManager.LoadScene(1);
+            SceneManager.LoadScene(2);
             OnLobbyStartGame?.Invoke(this, new LobbyEventArgs {lobby = joinedLobby});
         }
         catch (LobbyServiceException e) {

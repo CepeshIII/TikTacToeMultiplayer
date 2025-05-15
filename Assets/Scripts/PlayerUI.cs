@@ -1,9 +1,11 @@
 using System;
 using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class PlayerUI : MonoBehaviour
 {
+    [SerializeField] private Button quitButton;
     [SerializeField] private GameObject circleArrowGameObject;
     [SerializeField] private GameObject crossArrowGameObject;
     [SerializeField] private GameObject circleYouTextGameObject;
@@ -14,6 +16,12 @@ public class PlayerUI : MonoBehaviour
 
     private void Awake()
     {
+        quitButton.onClick.AddListener(() =>
+        {
+            GameManager.Instance.QuitFromGame();
+        });
+
+        quitButton.gameObject.SetActive(false);
         circleArrowGameObject.SetActive(false);
         crossArrowGameObject.SetActive(false);
         circleYouTextGameObject.SetActive(false);
@@ -58,6 +66,7 @@ public class PlayerUI : MonoBehaviour
         playerCrossScoreTextMesh.text = "0";
 
         UpdateCurrentArrow();
+        quitButton.gameObject.SetActive(true);
     }
 
     private void UpdateCurrentArrow()

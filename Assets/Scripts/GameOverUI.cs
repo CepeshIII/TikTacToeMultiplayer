@@ -14,7 +14,7 @@ public class GameOverUI : MonoBehaviour
     {
         rematchButton.onClick.AddListener(() =>
         {
-            GameManager.Instance.RematchRpc();
+            GameManager.Instance.QuitFromGame();
         });
     }
 
