@@ -1,14 +1,12 @@
 using System;
-using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using UnityEditor;
-using UnityEditor.UIElements;
 using UnityEngine;
 using UnityEngine.Networking;
 using UnityEngine.UIElements;
 
-namespace CodeMonkey.FreeWindow {
+namespace CodeMonkey.FreeWindow
+{
 
     [InitializeOnLoad]
     public class MainWindowFree : EditorWindow {
